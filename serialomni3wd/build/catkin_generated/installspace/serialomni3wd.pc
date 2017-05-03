@@ -1,0 +1,8 @@
+prefix=/tmp/usr/local
+
+Name: serialomni3wd
+Description: Description of serialomni3wd
+Version: 0.0.1
+Cflags: -I/tmp/usr/local/include
+Libs: -L/tmp/usr/local/lib -lserialomni3wd
+Requires: 
