@@ -1,8 +1,0 @@
-prefix=/home/foitn/catkin_ws/src/serialomni3wd/build/devel
-
-Name: serialomni3wd
-Description: Description of serialomni3wd
-Version: 0.0.1
-Cflags: -I/home/foitn/catkin_ws/src/serialomni3wd/include
-Libs: -L/home/foitn/catkin_ws/src/serialomni3wd/build/devel/lib -lserialomni3wd
-Requires: 
