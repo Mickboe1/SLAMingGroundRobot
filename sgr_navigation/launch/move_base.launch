@@ -1,0 +1,24 @@
+<launch>
+  <master auto="start"/>
+
+  <!-- Run the map server -->
+  <node pkg="gmapping" type="slam_gmapping" name="gmapping_thing">
+    <param name="scan" value="laser" />
+    <!-- <param name="scan" value="sgr/laser" /> -->
+    <param name="odom_frame" value="odom" />
+    <param name="base_frame" value="base_link" />
+  </node>
+
+  <!--- Run AMCL -->
+  <include file="$(find sgr_navigation)/launch/amcl_omni.launch" />
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <rosparam file="$(find sgr_navigation)/config/costmap_common_params.yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find sgr_navigation)/config/costmap_common_params.yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find sgr_navigation)/config/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find sgr_navigation)/config/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find sgr_navigation)/config/base_local_planner_params.yaml" command="load" />
+    <param name="controller_frequency" value="10.0" />
+  </node>
+  <remap from="cmd_vel" to="sgr/cmd_vel" />
+</launch>

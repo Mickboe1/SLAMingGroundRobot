@@ -6,6 +6,8 @@ find_package(catkin REQUIRED
     roscpp
     rospy
     std_msgs
+    nav_msgs
+    tf
 )
 
 catkin_package(
@@ -32,6 +34,17 @@ add_executable(omniSerialCommunicator src/omniSerialCommunicator.cc)
 add_dependencies(omniSerialCommunicator ${PROJECT_NAME})
 target_link_libraries(omniSerialCommunicator ${PROJECT_NAME})
 target_link_libraries(omniSerialCommunicator ${catkin_LIBRARIES})
+
+add_executable(odom_publisher src/odom_publisher.cc)
+add_dependencies(odom_publisher ${PROJECT_NAME})
+target_link_libraries(odom_publisher ${PROJECT_NAME})
+target_link_libraries(odom_publisher ${catkin_LIBRARIES})
+
+add_executable(sqaure_move src/square.cc)
+add_dependencies(sqaure_move ${PROJECT_NAME})
+target_link_libraries(sqaure_move ${PROJECT_NAME})
+target_link_libraries(sqaure_move ${catkin_LIBRARIES})
+
 
 ## Include headers
 include_directories(include)
