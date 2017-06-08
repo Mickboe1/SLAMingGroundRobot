@@ -10,6 +10,12 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
 )
 
+##add_executable(omniDataTimer src/omniDataTimer.cc)
+##add_dependencies(omniDataTimer ${PROJECT_NAME})
+##target_link_libraries(omniDataTimer ${PROJECT_NAME})
+##target_link_libraries(omniDataTimer ${catkin_LIBRARIES})
+
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 

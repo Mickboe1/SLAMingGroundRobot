@@ -7,10 +7,19 @@
     <!-- <param name="scan" value="sgr/laser" /> -->
     <param name="odom_frame" value="odom" />
     <param name="base_frame" value="base_link" />
+    <param name="xmin" value="10" />
+    <param name="ymin" value="10" />
+    <param name="xmax" value="10" />
+    <param name="ymax" value="10" />
+    <param name="particles" value="5" />
+    <param name="map_update_interval" value="0.5" />
+
+
+
   </node>
 
   <!--- Run AMCL -->
-  <include file="$(find sgr_navigation)/launch/amcl_omni.launch" />
+ <!--  <include file="$(find sgr_navigation)/launch/amcl_omni.launch" /> -->
 
   <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
     <rosparam file="$(find sgr_navigation)/config/costmap_common_params.yaml" command="load" ns="global_costmap" />
@@ -18,7 +27,7 @@
     <rosparam file="$(find sgr_navigation)/config/local_costmap_params.yaml" command="load" />
     <rosparam file="$(find sgr_navigation)/config/global_costmap_params.yaml" command="load" />
     <rosparam file="$(find sgr_navigation)/config/base_local_planner_params.yaml" command="load" />
-    <param name="controller_frequency" value="10.0" />
+    <param name="controller_frequency" value="5.0" />
   </node>
   <remap from="cmd_vel" to="sgr/cmd_vel" />
 </launch>

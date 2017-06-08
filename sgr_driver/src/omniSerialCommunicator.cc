@@ -6,12 +6,13 @@
 #include "serial/serial.h"
 #include "ros/ros.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Empty.h"
 #include "std_msgs/Float32MultiArray.h"
 #include "geometry_msgs/Twist.h"
 #include "sensor_msgs/Imu.h"
 #include "sensor_msgs/Joy.h"
 #include <sstream>
-
+#include <math.h>
 using std::string;
 using std::exception;
 using std::cout;
@@ -21,6 +22,7 @@ using std::vector;
 
 ros::Subscriber subCmd_Vel;
 ros::Subscriber subPID;
+ros::Subscriber subTimer;
 ros::Publisher 	pubImu;
 ros::Publisher 	pubSonar;
 ros::Publisher 	pubEncoder;
@@ -29,6 +31,7 @@ ros::Publisher 	pubCalcedsp;
 
 
 int baudrate = 115200;
+
 string portname = "/dev/ttyUSB0";
 string prefix = "/sgr/";
 serial::Serial*	serialOmni;
@@ -38,6 +41,9 @@ const int pid_int = 81;
 string 	inputString;
 int  	dataType;
 string 	dataString;
+
+vector<double> tosendCmdVel;
+
 
 geometry_msgs::Twist velocity;
 sensor_msgs::Imu imu;
@@ -160,20 +166,29 @@ void sendData(int dataType, vector<double> data) {
 }
 
 void cmd_velCallback(const geometry_msgs::Twist& data){
-	vector<double> tosend;
-	tosend.push_back(data.linear.x);
-	tosend.push_back(data.linear.y);
-	tosend.push_back(data.angular.z);
-	// cout << data << endl;
-	sendData(cmd_vel_int, tosend);
+	tosendCmdVel.clear();
+	tosendCmdVel.push_back(roundf(data.linear.y * 100 ) / 100);
+	tosendCmdVel.push_back(roundf(data.linear.x * 100 ) / 100);
+	tosendCmdVel.push_back(-roundf(data.angular.z * 100 ) / 100);
+	//cout << "callback " << data.linear.x << " " << data.linear.y << " " << data.angular.z << '\n';
+
+
+
 }
 
+void cmdVelTimerCallback(const std_msgs::Empty& msg){
+	if(tosendCmdVel.size() == 3){
+	        cout << "callback " << tosendCmdVel[0] << " " << tosendCmdVel[1] << " " << tosendCmdVel[2] << '\n';
+
+		sendData(cmd_vel_int, tosendCmdVel);
+	}
+}
 
 /* I know this is not the right message type, but this works... :P */
 void pidCallback(const geometry_msgs::Twist& data){
 	vector<double> tosend;
-	tosend.push_back(data.linear.x);
 	tosend.push_back(data.linear.y);
+	tosend.push_back(data.linear.x);
 	tosend.push_back(data.linear.z);
 	sendData(pid_int, tosend);
 }
@@ -191,6 +206,7 @@ void init(int argc, char **argv){
 
 	subCmd_Vel =  n.subscribe("/cmd_vel", 1000, cmd_velCallback);
 	subPID = n.subscribe(prefix + "PID", 1000, pidCallback);
+	subTimer = n.subscribe("/timer", 1000, cmdVelTimerCallback);
 	ros::Rate loop_rate(10);
 }
 
@@ -209,8 +225,8 @@ int main(int argc, char **argv) {
 	try {
 		serial::Serial pointer(portname, baudrate, serial::Timeout::simpleTimeout(10));
 		serialOmni = &pointer;
-
 		init(argc, argv);
+
 		while(ros::ok()){
 			cycle(serialOmni);
 			ros::spinOnce();

@@ -4,22 +4,28 @@
 #include <geometry_msgs/Twist.h>
 #include "std_msgs/Float32MultiArray.h"
 
+double ticksPerRotation = 760; //cpr
+double circumferenceWheel = 314; //in mm
+double mmToMeter = 0.001;
+double axisLenght = 140; //in mm
+double pow2half  = 1.414213; // 2^(1/2) or sin45 or cos45
+const int filterSize = 5;
+const float updateRate = 30.0;
+
+
+double dwheelAvaraging[4][filterSize] = {0};
 double cwheels[4] = {0,0,0,0}; //current wheels
 double lwheels[4] = {0,0,0,0}; //last wheels
 double dwheels[4] = {0,0,0,0}; //delta wheels
 
-//encoder ticks
-double ticksPerRotation = 760; //cpr
-double circumferenceWheel = 314; //in mm
-double mmToMeter = 0.001;
-double axisLenght = 180; //in mm
-// double pow2half  = 1.414213; // 2^(1/2) or sin45 or cos45
-double pow2half  = 1; // 2^(1/2) or sin45 or cos45
 
 void encoderCallback(const std_msgs::Float32MultiArray& encoders){
-  for(int i = 0; i <= 3; i ++){
-    cwheels[i] = -encoders.data.at(i);
+  if(encoders.data.size() == 4){
+    for(int i = 0; i <= 3; i ++){
+      cwheels[i] = encoders.data.at(i);
+    }
   }
+
 }
 
 int main(int argc, char** argv){
@@ -28,9 +34,11 @@ int main(int argc, char** argv){
 
   ros::NodeHandle n;
   ros::Publisher  pubOdom     =  n.advertise<nav_msgs::Odometry>("odom", 50);
+  ros::Publisher pubDeltaWheels	   = n.advertise<std_msgs::Float32MultiArray>("/sgr/encoderDelta", 10);
   ros::Subscriber subPID      =   n.subscribe("sgr/encoder", 1000, encoderCallback);
   tf::TransformBroadcaster odom_broadcaster;
 
+  std_msgs::Float32MultiArray DeltaWheels;
   double x = 0.0;
   double y = 0.0;
   double th = 0.0;
@@ -39,19 +47,29 @@ int main(int argc, char** argv){
   current_time = ros::Time::now();
   last_time = ros::Time::now();
 
-  ros::Rate r(20.0);
+  ros::Rate r(updateRate);
 
   while(n.ok()){
-
     ros::spinOnce();               // check for incoming messages
     current_time = ros::Time::now();
 
+    for(int i= 0; i < 4; i++){
+      for(int j = filterSize - 1; j > 0; j--){
+        dwheelAvaraging[i][j] = dwheelAvaraging[i][j-1];
+      }
+    }
 
-    // determine change in wheel encoders
-    for(int i = 0; i <= 3; i++){
-      dwheels[i] = cwheels[i] - lwheels[i];
+  	DeltaWheels.data.clear();
+    // determine change in wheel encoders based on an avarage filter
+    for(int i = 0; i < 4; i++){
+      dwheelAvaraging[i][0] = cwheels[i] - lwheels[i];
       lwheels[i] = cwheels[i];
-      std::cout << i << " " << dwheels[i] << '\n';
+      double sum = 0.0;
+      for(int j = filterSize - 1; j > 0; j--){
+        sum += dwheelAvaraging[i][j-1];
+      }
+      dwheels[i] = roundf(sum / filterSize);
+      DeltaWheels.data.push_back(dwheels[i]);
     }
 
     double dxTicks = (pow2half * (dwheels[0]/2 - dwheels[2]/2))/2 - (pow2half * (dwheels[1]/2 - dwheels[3]/2))/2;
@@ -60,14 +78,16 @@ int main(int argc, char** argv){
 
     double dx =  dxTicks * (circumferenceWheel / ticksPerRotation) * mmToMeter;
     double dy =  dyTicks * (circumferenceWheel / ticksPerRotation) * mmToMeter;
-    double dth = (dwheels[0] + dwheels[1] + dwheels[2] + dwheels[3])/(4*axisLenght);
+    double dth = -(dwheels[0] + dwheels[1] + dwheels[2] + dwheels[3]) * (circumferenceWheel / ticksPerRotation) /(4*axisLenght);
 
 
     double dt = (current_time - last_time).toSec();
-    x += dx;
-    y += dy;
+    x += cos(th) * dx - sin(th) * dy;
+    y += sin(th) * dx + cos(th) * dy;
     th += dth;
 
+  	DeltaWheels.data.push_back(dt);
+    pubDeltaWheels.publish(DeltaWheels);
 
 
     //since all odometry is 6DOF we'll need a quaternion created from yaw

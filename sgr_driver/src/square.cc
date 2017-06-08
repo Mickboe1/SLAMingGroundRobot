@@ -7,7 +7,7 @@
 
 using namespace std;
 
-unsigned int microseconds = 25000;
+unsigned int microseconds = 200000;
 bool x = true;
 bool y = true;
 bool toggle = true;
@@ -46,11 +46,11 @@ void move(float i){
 
 void cycle(){
 
-	for(float i = 10; i < 50; i ++){
+	for(float i = 10; i < 50; i += 5){
 		move(i);
 		usleep(microseconds);
 	}
-	for(float i = 50; i > 0; i --){
+	for(float i = 50; i > 0; i -=5){
 		move(i);
 		usleep(microseconds);
 
@@ -64,40 +64,17 @@ void cycle(){
 	toggle = !toggle;
 }
 
-void oneMeter(){
-        velocity.linear.x = 1;
-        velocity.linear.y = 0;
-        velocity.angular.z = 0;
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-
-	usleep(2000000);
-        velocity.linear.x = 0;
-
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-        pubCmd_vel.publish(velocity);
-
-}
 
 
 int main(int argc, char **argv){
 	ros::init(argc, argv, "omni_square");
 	ros::NodeHandle n;
-	pubCmd_vel = n.advertise<geometry_msgs::Twist>("/sgr/cmd_vel", 1000);
+	pubCmd_vel = n.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
 
 	try{
 		while(ros::ok()){
-			//cycle();
-			oneMeter();
-			ros::spin();
+			cycle();
+			ros::spinOnce();
 		}
 	}catch(exception e){
 		cerr << e.what() << endl;
@@ -105,9 +82,6 @@ int main(int argc, char **argv){
 	velocity.linear.x = 0;
 	velocity.linear.y = 0;
 	velocity.angular.z = 0;
-	pubCmd_vel.publish(velocity);
-	pubCmd_vel.publish(velocity);
-	pubCmd_vel.publish(velocity);
 	pubCmd_vel.publish(velocity);
 	return 0;
 }
